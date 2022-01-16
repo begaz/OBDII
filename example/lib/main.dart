@@ -67,9 +67,59 @@ class Float extends StatelessWidget {
               print("c: $command r: $response, rc: $requestCode");
             });
           }
-          Future.delayed(Duration(milliseconds: await MyApp.of(context).obd2.configObdWithJSON()), (){
+
+          await Future.delayed(Duration(milliseconds: await MyApp.of(context).obd2.getDTCFromJSON(
+              /*'''[
+            {
+                "command": "AT Z",
+                "description": "",
+                "status": true
+            },
+            {
+                "command": "AT E0",
+                "description": "",
+                "status": true
+            },
+            {
+                "command": "AT SP 0",
+                "description": "",
+                "status": true
+            },
+            {
+                "command": "AT SH 81 10 F1",
+                "description": "",
+                "status": true
+            },
+            {
+                "command": "AT H1",
+                "description": "",
+                "status": true
+            },
+            {
+                "command": "AT S0",
+                "description": "",
+                "status": true
+            },
+            {
+                "command": "AT M0",
+                "description": "",
+                "status": true
+            },
+            {
+                "command": "AT AT 1",
+                "description": "",
+                "status": true
+            },
+            {
+                "command": "01 00",
+                "description": "",
+                "status": true
+            }
+        ]'''*/
+          )), (){
             print("config is finished");
           });
+
         }
       },
     );

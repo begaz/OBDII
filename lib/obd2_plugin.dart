@@ -153,7 +153,7 @@ class Obd2Plugin {
     }
   }
 
-  Future<void> getDTCFromJSON() async {
+  Future<int> getDTCFromJSON(/*String stringJson, */{int lastIndex = 0}) async {
     commandMode = Mode.dtc ;
     String stringJson = '''[
       {
@@ -304,15 +304,31 @@ class Obd2Plugin {
           "status": true
       }
     ]''';
+    bool configed = false ;
     List<dynamic> stm = [];
     try {
       stm = json.decode(stringJson);
     } catch (e){
       print(e);
     }
+    int index = 0 ;
     if (stm.isEmpty){
-      throw Exception("Are you joking me ?, send me configuration json text.");
+      throw Exception("Are you joking me ?, send me dtc json list text.");
     }
+    _write(stm[lastIndex]["command"], 3);
+    index = lastIndex ;
+    if ((stm.length - 1) == index){
+      configed = true;
+      commandMode = Mode.at ;
+    }
+
+    if (!configed){
+      Future.delayed(const Duration(milliseconds: 1000), (){
+        getDTCFromJSON(lastIndex: (lastIndex + 1));
+      });
+    }
+
+    return ((stm.length * 1000) + 1500);
   }
 
   /// This int value return needed time to config / please wait finish it
@@ -321,70 +337,23 @@ class Obd2Plugin {
   /// [Future.delayed] with int in milliseconds duration => Stop Loading
   /// for example
   /// Start loading ...
-  /// Future.delayed(Duration(milliseconds: await MyApp.of(context).obd2.configObdWithJSON()), (){
+  /// await Future.delayed(Duration(milliseconds: await MyApp.of(context).obd2.configObdWithJSON('json String')), (){
   //    print("config is finished");
-  //    finish loading ...
   //  });
+  // Stop loading ...
   /// Thank you for reading this document.
-  Future<int> configObdWithJSON({int lastIndex = 0}) async {
+  Future<int> configObdWithJSON(String stringJson, {int lastIndex = 0}) async {
     commandMode = Mode.config ;
     bool configed = false ;
-    String stringJson = '''[
-            {
-                "command": "AT Z",
-                "description": "",
-                "status": true
-            },
-            {
-                "command": "AT E0",
-                "description": "",
-                "status": true
-            },
-            {
-                "command": "AT SP 0",
-                "description": "",
-                "status": true
-            },
-            {
-                "command": "AT SH 81 10 F1",
-                "description": "",
-                "status": true
-            },
-            {
-                "command": "AT H1",
-                "description": "",
-                "status": true
-            },
-            {
-                "command": "AT S0",
-                "description": "",
-                "status": true
-            },
-            {
-                "command": "AT M0",
-                "description": "",
-                "status": true
-            },
-            {
-                "command": "AT AT 1",
-                "description": "",
-                "status": true
-            },
-            {
-                "command": "01 00",
-                "description": "",
-                "status": true
-            }
-        ]''';
     List<dynamic> stm = [];
     try {
       stm = json.decode(stringJson);
     } catch (e){
-
+      print(e);
     }
     int index = 0 ;
     if (stm.isEmpty){
-      throw Exception("Are you joking me ?, send me configuration json text.");
+      throw Exception("Are you joking me ?, send me configuration json list text.");
     }
     _write(stm[lastIndex]["command"], 2);
     index = lastIndex ;
@@ -395,11 +364,11 @@ class Obd2Plugin {
 
     if (!configed){
       Future.delayed(Duration(milliseconds: stm[lastIndex]["command"] == "AT Z" || stm[lastIndex]["command"] == "ATZ" ? 1000 : 100), (){
-        configObdWithJSON(lastIndex: (lastIndex + 1));
+        configObdWithJSON(stringJson, lastIndex: (lastIndex + 1));
       });
     }
 
-    return (stm.length * 110 + 1100);
+    return (stm.length * 150 + 1500);
   }
 
 
@@ -485,17 +454,31 @@ class Obd2Plugin {
         } else {
           response += string ;
           if (this.onResponse != null){
-            this.onResponse!(
-                lastetCommand,
-                response.replaceAll("\n", "")
-                    .replaceAll("\r", "")
-                    .replaceAll(">", "")
-                    .replaceAll("SEARCHING...", ""),
-                requestCode
-            );
-            requestCode = 999999999999999999;
-            lastetCommand = "";
-            response = "";
+            if (commandMode == Mode.dtc){
+              String validResponse = !response.contains("NO DATA") ? _convertToByteString(response.replaceAll("\n", "").replaceAll("\r", "").replaceAll(">", "").replaceAll("SEARCHING...", "")) : response.replaceAll("\n", "").replaceAll("\r", "").replaceAll(">", "").replaceAll("SEARCHING...", "");
+              List<String> dtcList = _getDtcsFrom(
+                  _convertToByteString(validResponse),
+                  limit: "7F ${lastetCommand.contains(" ") ? lastetCommand.split(" ")[0] : lastetCommand.toString()}",
+                  command: lastetCommand
+              );
+              print(lastetCommand + ": " + validResponse + " => " + dtcList.toString());
+              requestCode = 999999999999999999;
+              lastetCommand = "";
+              response = "";
+            } else {
+              this.onResponse!(
+                  lastetCommand,
+                  response.replaceAll("\n", "")
+                      .replaceAll("\r", "")
+                      .replaceAll(">", "")
+                      .replaceAll("SEARCHING...", ""),
+                  requestCode
+              );
+
+              requestCode = 999999999999999999;
+              lastetCommand = "";
+              response = "";
+            }
           }
         }
       });
@@ -536,10 +519,10 @@ class Obd2Plugin {
           resultt += _initialDTC(binary.substring(4, 8));
           resultt += _initialDTC(binary.substring(8, 12));
           resultt += _initialDTC(binary.substring(12, binary.length));
-          resultt = "";
           if(resultt != "P0000" && result.contains(resultt) == false){
             result.add(resultt);
           }
+          resultt = "";
         }
       }
     }
