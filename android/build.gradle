@@ -25,7 +25,7 @@ apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 
 android {
-    compileSdkVersion 30
+    compileSdkVersion 31
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
@@ -43,6 +43,7 @@ android {
     defaultConfig {
         minSdkVersion 19
     }
+    buildToolsVersion '30.0.3'
 }
 
 dependencies {

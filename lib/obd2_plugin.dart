@@ -5,6 +5,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
+import 'package:math_expressions/math_expressions.dart';
 
 enum Mode {
   parameter,
@@ -13,6 +14,9 @@ enum Mode {
   at
 }
 
+/// Never run multiple command functions at the same time. This may result in errors for which there is no warranty
+/// Never use 1, 2, 3 or 4 for requestCodes for example you can use 5, 11, 222, 333, 4444 or 1234 and any number you wants
+/// but never use single number about 1,2,3,4 => Thanks.
 class Obd2Plugin {
   static const MethodChannel _channel = MethodChannel('obd2_plugin');
 
@@ -24,6 +28,10 @@ class Obd2Plugin {
   String lastetCommand = "";
   Function(String command, String response, int requestCode)? onResponse ;
   Mode commandMode = Mode.at ;
+  List<String> dtcCodesResponse = [];
+  bool sendDTCToResponse = false ;
+  dynamic runningService = '';
+  List<dynamic> parameterResponse = [];
 
   static Future<String?> get platformVersion async {
     final String? version = await _channel.invokeMethod('getPlatformVersion');
@@ -153,182 +161,65 @@ class Obd2Plugin {
     }
   }
 
-  Future<int> getDTCFromJSON(/*String stringJson, */{int lastIndex = 0}) async {
+  Future<int> getParamsFromJSON (String jsonString, {int lastIndex = 0, int requestCode = 4}) async {
+    commandMode = Mode.parameter ;
+    bool configed = false ;
+    List<dynamic> stm = [];
+    try {
+      stm = json.decode(jsonString);
+    } catch (e){
+      //
+    }
+    int index = 0 ;
+    if (stm.isEmpty){
+      throw Exception("Are you joking me ?, send me params json list text.");
+    }
+    index = lastIndex ;
+    runningService = stm[lastIndex];
+    if ((stm.length - 1) == index){
+      configed = true;
+      sendDTCToResponse = true;
+    }
+    _write(stm[lastIndex]["PID"], requestCode);
+    if (!configed){
+      Future.delayed(const Duration(milliseconds: 350), (){
+        getParamsFromJSON(jsonString, lastIndex: (lastIndex + 1));
+      });
+    }
+
+    return ((stm.length * 350) + 150);
+  }
+
+
+
+  Future<int> getDTCFromJSON(String stringJson, {int lastIndex = 0, int requestCode = 3}) async {
     commandMode = Mode.dtc ;
-    String stringJson = '''[
-      {
-          "id": 1,
-          "created_at": "2021-12-05T16:33:18.965620Z",
-          "command": "03",
-          "response": "6",
-          "status": true
-      },
-      {
-          "id": 7,
-          "created_at": "2021-12-05T16:35:01.516477Z",
-          "command": "18 FF 00",
-          "response": "",
-          "status": true
-      },
-      {
-          "id": 6,
-          "created_at": "2021-12-05T16:34:51.417614Z",
-          "command": "18 02 FF FF",
-          "response": "",
-          "status": true
-      },
-      {
-          "id": 5,
-          "created_at": "2021-12-05T16:34:23.837086Z",
-          "command": "18 02 FF 00",
-          "response": "",
-          "status": true
-      },
-      {
-          "id": 4,
-          "created_at": "2021-12-05T16:34:12.496052Z",
-          "command": "18 00 FF 00",
-          "response": "",
-          "status": true
-      },
-      {
-          "id": 3,
-          "created_at": "2021-12-05T16:33:38.323200Z",
-          "command": "0A",
-          "response": "6",
-          "status": true
-      },
-      {
-          "id": 2,
-          "created_at": "2021-12-05T16:33:28.439547Z",
-          "command": "07",
-          "response": "6",
-          "status": true
-      },
-      {
-          "id": 34,
-          "created_at": "2021-12-05T16:41:25.883408Z",
-          "command": "17 FF 00",
-          "response": "",
-          "status": true
-      },
-      {
-          "id": 35,
-          "created_at": "2021-12-05T16:41:38.901888Z",
-          "command": "13 FF 00",
-          "response": "",
-          "status": true
-      },
-      {
-          "id": 36,
-          "created_at": "2021-12-05T16:41:51.040962Z",
-          "command": "19 02 AF",
-          "response": "",
-          "status": true
-      },
-      {
-          "id": 37,
-          "created_at": "2021-12-05T16:42:01.384228Z",
-          "command": "19 02 AC",
-          "response": "",
-          "status": true
-      },
-      {
-          "id": 38,
-          "created_at": "2021-12-05T16:42:11.770741Z",
-          "command": "19 02 8D",
-          "response": "",
-          "status": true
-      },
-      {
-          "id": 39,
-          "created_at": "2021-12-05T16:42:28.443368Z",
-          "command": "19 02 23",
-          "response": "",
-          "status": true
-      },
-      {
-          "id": 40,
-          "created_at": "2021-12-05T16:42:39.200378Z",
-          "command": "19 02 78",
-          "response": "",
-          "status": true
-      },
-      {
-          "id": 41,
-          "created_at": "2021-12-05T16:42:50.444404Z",
-          "command": "19 02 08",
-          "response": "",
-          "status": true
-      },
-      {
-          "id": 42,
-          "created_at": "2021-12-05T16:43:00.466739Z",
-          "command": "19 0F AC",
-          "response": "",
-          "status": true
-      },
-      {
-          "id": 43,
-          "created_at": "2021-12-05T16:43:10.645120Z",
-          "command": "19 0F 8D",
-          "response": "",
-          "status": true
-      },
-      {
-          "id": 44,
-          "created_at": "2021-12-05T16:43:25.257023Z",
-          "command": "19 0F 23",
-          "response": "",
-          "status": true
-      },
-      {
-          "id": 45,
-          "created_at": "2021-12-05T16:43:36.567099Z",
-          "command": "19 D2 FF 00",
-          "response": "",
-          "status": true
-      },
-      {
-          "id": 46,
-          "created_at": "2021-12-05T17:15:56.352652Z",
-          "command": "19 C2 FF 00",
-          "response": "",
-          "status": true
-      },
-      {
-          "id": 47,
-          "created_at": "2021-12-05T17:16:17.567797Z",
-          "command": "19 FF FF 00",
-          "response": "",
-          "status": true
-      }
-    ]''';
     bool configed = false ;
     List<dynamic> stm = [];
     try {
       stm = json.decode(stringJson);
     } catch (e){
-      print(e);
+      //
     }
     int index = 0 ;
     if (stm.isEmpty){
       throw Exception("Are you joking me ?, send me dtc json list text.");
     }
-    _write(stm[lastIndex]["command"], 3);
     index = lastIndex ;
     if ((stm.length - 1) == index){
       configed = true;
-      commandMode = Mode.at ;
+      sendDTCToResponse = true;
     }
+    _write(stm[lastIndex]["command"], requestCode);
+
 
     if (!configed){
       Future.delayed(const Duration(milliseconds: 1000), (){
-        getDTCFromJSON(lastIndex: (lastIndex + 1));
+        getDTCFromJSON(stringJson, lastIndex: (lastIndex + 1));
       });
     }
 
-    return ((stm.length * 1000) + 1500);
+    return ((stm.length * 1000) + 150);
   }
 
   /// This int value return needed time to config / please wait finish it
@@ -342,24 +233,23 @@ class Obd2Plugin {
   //  });
   // Stop loading ...
   /// Thank you for reading this document.
-  Future<int> configObdWithJSON(String stringJson, {int lastIndex = 0}) async {
+  Future<int> configObdWithJSON(String stringJson, {int lastIndex = 0, int requestCode = 2}) async {
     commandMode = Mode.config ;
     bool configed = false ;
     List<dynamic> stm = [];
     try {
       stm = json.decode(stringJson);
     } catch (e){
-      print(e);
+      //
     }
     int index = 0 ;
     if (stm.isEmpty){
       throw Exception("Are you joking me ?, send me configuration json list text.");
     }
-    _write(stm[lastIndex]["command"], 2);
+    _write(stm[lastIndex]["command"], requestCode);
     index = lastIndex ;
     if ((stm.length - 1) == index){
       configed = true;
-      commandMode = Mode.at ;
     }
 
     if (!configed){
@@ -396,11 +286,11 @@ class Obd2Plugin {
     return unpaired;
   }
 
-
   Future<bool> isPaired (BluetoothDevice _device) async {
     BluetoothBondState state = await _bluetooth.getBondStateForAddress(_device.address);
     return state.isBonded;
   }
+
   Future<bool> get hasConnection async {
     return connection != null ;
   }
@@ -411,10 +301,6 @@ class Obd2Plugin {
     connection?.output.add(Uint8List.fromList(utf8.encode("$command\r\n"))) ;
     await connection?.output.allSent ;
   }
-
-
-
-
 
   double _volEff = 0.8322 ;
   double _fTime(x) => x / 1000 ;
@@ -454,15 +340,68 @@ class Obd2Plugin {
         } else {
           response += string ;
           if (this.onResponse != null){
-            if (commandMode == Mode.dtc){
-              String validResponse = !response.contains("NO DATA") ? _convertToByteString(response.replaceAll("\n", "").replaceAll("\r", "").replaceAll(">", "").replaceAll("SEARCHING...", "")) : response.replaceAll("\n", "").replaceAll("\r", "").replaceAll(">", "").replaceAll("SEARCHING...", "");
-              List<String> dtcList = _getDtcsFrom(
-                  _convertToByteString(validResponse),
+            if (commandMode == Mode.parameter){
+              dynamic dyResponse = "";
+              String type = runningService["description"].toString().replaceAll("<", "").replaceAll(">", "");
+
+              String validResponse = response.replaceAll("\n", "").replaceAll("\r", "").replaceAll(">", "").replaceAll("SEARCHING...", "");
+              if(validResponse.contains(runningService["unit"].toString().toUpperCase()) || validResponse.contains(runningService["unit"].toString().toLowerCase())){
+                validResponse = validResponse.replaceAll(runningService["unit"].toString().toUpperCase(), "");
+                validResponse = validResponse.replaceAll(runningService["unit"].toString().toLowerCase(), "");
+              }
+              if(runningService["description"].toString().contains(", ")){
+                List<String> bytes = _calculateParameterFrames(runningService["PID"], validResponse.toString());
+                String formula = runningService["description"].toString().split(", ")[1];
+                type = type.split(", ")[0];
+                // formula for example => (( [0] * 256) + [1] ) / 4
+                try {
+                  for (int i = 0 ; i < bytes.length; i++){
+                    formula = formula.replaceAll("[${i.toString()}]", int.parse(bytes[i], radix: 16).toRadixString(10));
+                  }
+                  Parser p = Parser();
+                  Expression exp = p.parse(formula);
+                  dyResponse = exp.evaluate(EvaluationType.REAL, ContextModel()).toString();
+                } catch (e){
+                  //
+                }
+
+              } else {
+                dyResponse = validResponse.toString();
+              }
+              runningService["response"] = dyResponse ;
+              parameterResponse.add(runningService);
+              if (sendDTCToResponse){
+                this.onResponse!(
+                    "PARAMETER",
+                    json.encode(parameterResponse),
+                    requestCode
+                );
+                parameterResponse = [];
+                sendDTCToResponse = false ;
+              }
+              commandMode = Mode.at ;
+              requestCode = 999999999999999999 ;
+              lastetCommand = "";
+              response = "";
+            } else if (commandMode == Mode.dtc){
+              String validResponse = response.replaceAll("\n", "").replaceAll("\r", "").replaceAll(">", "").replaceAll("SEARCHING...", "");
+              dtcCodesResponse += _getDtcsFrom(
+                  validResponse,
                   limit: "7F ${lastetCommand.contains(" ") ? lastetCommand.split(" ")[0] : lastetCommand.toString()}",
                   command: lastetCommand
               );
-              print(lastetCommand + ": " + validResponse + " => " + dtcList.toString());
-              requestCode = 999999999999999999;
+              dtcCodesResponse = dtcCodesResponse.toSet().toList();
+              if (sendDTCToResponse){
+                this.onResponse!(
+                    "DTC",
+                    json.encode(dtcCodesResponse),
+                    requestCode
+                );
+                dtcCodesResponse = [];
+                sendDTCToResponse = false ;
+              }
+              commandMode = Mode.at ;
+              requestCode = 999999999999999999 ;
               lastetCommand = "";
               response = "";
             } else {
@@ -474,7 +413,8 @@ class Obd2Plugin {
                       .replaceAll("SEARCHING...", ""),
                   requestCode
               );
-
+              sendDTCToResponse = false ;
+              commandMode = Mode.at ;
               requestCode = 999999999999999999;
               lastetCommand = "";
               response = "";
@@ -498,78 +438,101 @@ class Obd2Plugin {
     return buffer.toString();
   }
 
+
   List<String> _getDtcsFrom(String value, {required String limit, required String command}){
-    value = _convertToByteString(value);
-    List<String> result = [];
-    String resultt = "";
+    String result = "";
+    List<String> _dtcCodes = [];
     if (!value.contains(limit)){
       List<String> dtcBytes = _calculateDtcFrames(command, value);
-      if (!(dtcBytes.length < 6)){
+      if (dtcBytes.length < 6){
+        // checkTheEndItem(context);
+      } else {
         for ( int i = 0; i < dtcBytes.length; i += 3 ){
           if (i >= dtcBytes.length){
             break ;
           }
-          String binary = int.parse(dtcBytes[i]+dtcBytes[i+1], radix: 16).toRadixString(2);
-          if (binary.length != 16) {
-            var len = 16 - binary.length;
-            binary = binary.padLeft(len + binary.length, '0');
+          try {
+            String binary = int.parse(dtcBytes[i]+dtcBytes[i+1], radix: 16).toRadixString(2);
+            if (binary.length != 16) {
+              var len = 16 - binary.length;
+              binary = binary.padLeft(len + binary.length, '0');
+            }
+            result += _initialDataOne(binary.substring(0, 2));
+            result += _initialDataTwo(binary.substring(2, 4));
+            result += _initialDTC(binary.substring(4, 8));
+            result += _initialDTC(binary.substring(8, 12));
+            result += _initialDTC(binary.substring(12, binary.length));
+            if(result != "P0000" && _dtcCodes.contains(result) == false){
+              _dtcCodes.add(result);
+            }
+          } on RangeError catch (e){
+            // index range error - no problem
           }
-          resultt += _initialDataOne(binary.substring(0, 2));
-          resultt += _initialDataTwo(binary.substring(2, 4));
-          resultt += _initialDTC(binary.substring(4, 8));
-          resultt += _initialDTC(binary.substring(8, 12));
-          resultt += _initialDTC(binary.substring(12, binary.length));
-          if(resultt != "P0000" && result.contains(resultt) == false){
-            result.add(resultt);
-          }
-          resultt = "";
+          result = "";
         }
       }
     }
-    return result ;
+    return _dtcCodes ;
+  }
+
+
+
+  List<String> _calculateParameterFrames(String command, String response){
+    command = command.replaceAll(" ", "");
+    response = response.replaceAll(" ", "");
+
+    if (response == "NODATA"){
+      return [];
+    }
+
+    String cmd = "";
+    for (int i = 0; i < command.length ; i++){
+      cmd += i == 0 ? (int.parse(command[i]) + 4).toString() : command[i];
+    }
+    String calculatedValidResponse = "";
+    List<String> splitedValid = response.split(cmd);
+    for (int i = 1; i < splitedValid.length; i++){
+      calculatedValidResponse += splitedValid[i];
+    }
+    List<String> bytes = _convertToByteString(calculatedValidResponse).split(" ");
+
+    if (bytes.isNotEmpty){
+      if (bytes[bytes.length - 1].length < 2){
+        bytes.removeAt(bytes.length - 1);
+      }
+    }
+    return bytes ;
   }
 
 
 
 
   List<String> _calculateDtcFrames(String command, String response){
-    String cmd = "${(int.parse(command[0]) + 4)}${command[1]}";
-    if (!response.contains(cmd)){
+    command = command.replaceAll(" ", "");
+    response = response.replaceAll(" ", "");
+
+    if (response == "NODATA"){
       return [];
     }
-    List<String> responseCharacters = response.split(" ");
-    List<String> bytes = [];
-    bool addToBytes = false ;
-    for (int i = 0; i < responseCharacters.length; i++){
-      if ((responseCharacters.length - 1) == i){
-        if (addToBytes){
-          bytes.add(responseCharacters[i]);
-        }
-      } else {
-        if (!addToBytes){
-          if (cmd.contains(" ")){
-            if (responseCharacters[i] == cmd.split(" ")[0] && responseCharacters[(i+1)] == cmd.split(" ")[1]){
-              i = i + 1 ;
-              addToBytes = true ;
-            }
-          } else {
-            if (responseCharacters[i] == cmd){
-              addToBytes = true ;
-            }
-          }
 
-        } else {
-          bytes.add(responseCharacters[i]);
-        }
-      }
+    String cmd = "";
+    for (int i = 0; i < 2 ; i++){
+      cmd += i == 0 ? (int.parse(command[i]) + 4).toString() : command[i];
     }
+    String calculatedValidResponse = "";
+    List<String> splitedValid = response.split(cmd);
+    for (int i = 1; i < splitedValid.length; i++){
+      calculatedValidResponse += splitedValid[i];
+    }
+    List<String> bytes = _convertToByteString(calculatedValidResponse).split(" ");
 
     if (bytes.isNotEmpty){
-      bytes.removeAt(bytes.length - 1);
+      if (bytes[bytes.length - 1].length < 2){
+        bytes.removeAt(bytes.length - 1);
+      }
     }
     return bytes ;
   }
-
 
 
   String _initialDataOne(String data_1){

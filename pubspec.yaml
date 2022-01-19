@@ -12,6 +12,7 @@ dependencies:
     sdk: flutter
 
   flutter_bluetooth_serial: ^0.4.0
+  math_expressions: ^2.3.0
 
 
 dev_dependencies:
