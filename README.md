@@ -1,7 +1,6 @@
 # OBD-II Plugin
 
-Connect safety to elm327 🤗
-© Copyright 2021 [Begaz](https://begaz.app) - All Rights Reserved
+## Connect safety to elm327 🤗
 
 ## Getting Started
 
@@ -363,4 +362,4 @@ await obd2.configObdWithJSON(json, {int requestCode});
 	```
 After call ```configObdWithJSON```, you can access received data in ```setOnDataReceived``` method.
 
-Created with ❤️ at Begaz.
+Created with ❤️ at [Begaz](https://begaz.app).
