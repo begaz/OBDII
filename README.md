@@ -1,6 +1,6 @@
 # OBD-II Plugin
 
-## Connect safety to elm327 🤗
+**Now everyone can connect safety to elm327 🤗** with [Begaz](https://begaz.app)
 
 ## Getting Started
 
