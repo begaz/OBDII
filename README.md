@@ -26,7 +26,7 @@ dependencies:
     sdk: flutter
 
   obd_connection_ii:
-    path: ../
+    path: ../obd_connection_ii/
 ```
 
 then in terminal run
