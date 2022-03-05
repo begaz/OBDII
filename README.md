@@ -18,6 +18,14 @@ dependencies:
   obd_connection_ii:
     path: ../
 ```
+or 
+```yaml
+obd_connection_ii:
+    git:
+      url: git://github.com/begaz/OBDII.git
+      ref: main
+```
+
 then in terminal run
 ```sh
 flutter pub get
