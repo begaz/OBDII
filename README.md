@@ -4,6 +4,16 @@
 
 ## Getting Started
 
+add dependency by git
+```yaml
+obd_connection_ii:
+    git:
+      url: git://github.com/begaz/OBDII.git
+      ref: main
+```
+
+or step by step with hand :)
+
 1. Download the plugin from git
 2. Save in [../projectFolder]() directory
 3. Extract folder on ../projectFolder
@@ -17,13 +27,6 @@ dependencies:
 
   obd_connection_ii:
     path: ../
-```
-or 
-```yaml
-obd_connection_ii:
-    git:
-      url: git://github.com/begaz/OBDII.git
-      ref: main
 ```
 
 then in terminal run
