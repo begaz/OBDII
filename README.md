@@ -17,7 +17,7 @@ or step by step with hand :)
 1. Download the plugin from git
 2. Save in [../projectFolder]() directory
 3. Extract folder on ../projectFolder
-4. Rename extracted folder to "obd_connection_ii"
+4. Rename extracted folder to "obd2_plugin"
 5. add plugin to pubspec.yaml with
 
 ```yaml
