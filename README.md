@@ -176,7 +176,7 @@ await obd2.configObdWithJSON(json, {int requestCode});
             {
                 "PID": "AT RV",
                 "length": 4,
-                "title": "ولتاژ باطری",
+                "title": "Battery Voltage",
                 "unit": "V",
                 "description": "<str>",
                 "status": true
@@ -184,7 +184,7 @@ await obd2.configObdWithJSON(json, {int requestCode});
             {
                 "PID": "01 0C",
                 "length": 2,
-                "title": "دور موتور",
+                "title": "Engine RPM",
                 "unit": "RPM",
                 "description": "<double>, (( [0] * 256) + [1] ) / 4",
                 "status": true
@@ -192,7 +192,7 @@ await obd2.configObdWithJSON(json, {int requestCode});
             {
                 "PID": "01 0D",
                 "length": 1,
-                "title": "سرعت خودرو",
+                "title": "Speed",
                 "unit": "Kh",
                 "description": "<int>, [0]",
                 "status": true
@@ -200,7 +200,7 @@ await obd2.configObdWithJSON(json, {int requestCode});
             {
                 "PID": "01 05",
                 "length": 1,
-                "title": "دمای موتور",
+                "title": "Engine Temp",
                 "unit": "°C",
                 "description": "<int>, [0] - 40",
                 "status": true
@@ -208,7 +208,7 @@ await obd2.configObdWithJSON(json, {int requestCode});
             {
                 "PID": "01 0B",
                 "length": 1,
-                "title": "فشار مطلق منیفولد",
+                "title": "Manifold absolute pressure",
                 "unit": "kPa",
                 "description": "<int>, [0]",
                 "status": true
